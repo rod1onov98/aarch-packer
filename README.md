@@ -227,6 +227,5 @@ protector/
 │   └── Android.mk        — arm32 build file
 ├── config/
 │   └── config.ini          — example config
-├── build.bat             — build protector.exe
-└── protect.bat           — apply protection to a library
+└──
 ```
