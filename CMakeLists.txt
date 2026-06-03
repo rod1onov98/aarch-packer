@@ -1,0 +1,20 @@
+cmake_minimum_required(VERSION 3.15)
+project(elf_protector CXX)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+add_executable(protector src/main.cpp)
+target_include_directories(protector PRIVATE src)
+if(MSVC)
+    set_property(TARGET protector PROPERTY
+        MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    target_compile_options(protector PRIVATE /W3
+        $<$<CONFIG:Debug>:/Od>
+        $<$<CONFIG:Release>:/O2>)
+    string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}" CACHE STRING "" FORCE)
+else()
+    target_compile_options(protector PRIVATE -Wall -O2)
+endif()
