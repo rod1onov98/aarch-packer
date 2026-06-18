@@ -347,6 +347,6 @@ aarch-packer/
     └── config.ini           — example config
 ```
 
-#notice from author
+## notice from author
 
 if you plan to use all possible protection options and further improve the packer, then i hasten to remind you that optimizing your game will be deadass and fps was dead 
