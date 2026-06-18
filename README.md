@@ -3,6 +3,9 @@
 post-build protector for android .so libs. encrypts .text section with chacha20, rewrites internal call sites into pc-relative stubs, and patches .init_array so decryptor runs before JNI_OnLoad. works on arm32 and arm64, no root needed.
 
 ---
+## demonstration
+
+![demo](./demo.png)
 
 ## how it works
 
