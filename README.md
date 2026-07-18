@@ -351,10 +351,3 @@ aarch-packer/
 ## notice from author
 
 if you plan to use all possible protection options and further improve the packer, then i hasten to remind you that optimizing your game will be deadass and fps was dead 
-
-## update log
-
-18.07.2026
- 1. fixed crashes with renaming symbols(just removed)
- 2. removed graph breaker
- 3. added arm64 support
