@@ -192,7 +192,7 @@ APP_OPTIM    := release
 APP_STL      := c++_static
 ```
 
-> repo currently has `APP_ABI := armeabi-v7a` — arm64 path still being finished. bring both ABIs back once arm64 works properly.
+> repo currently has `APP_ABI := armeabi-v7a` — but now, arm64 support is added.
 
 ---
 
