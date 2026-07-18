@@ -29,20 +29,18 @@ workflow (run64 / run32):
    - optional: critical-functions table (CRIT_MAGIC)
    - optional: string table (STRTBL_MAGIC)
    - optional: library whitelist (WLIST_MAGIC, xxhash32 of .so basenames)
-5. graph_breaker — inserts fake prologues and junk after branches. **currently disabled** — clobbers live instructions and causes SIGILL at runtime, will be rewritten
-6. encrypts strings in .rodata-like sections (SHT_PROGBITS, alloc, not exec, not writable, not .prot_data) — length 4 to 512 bytes, separate xor key per string via xxhash32
-7. patches call sites: every bl/blx is rewritten to jump into the stub in .prot
-8. finalizes integrity hashes
-9. encrypts exec sections with chacha20, skip ranges are skipped. each region gets own nonce, derived from region VA through a chacha20 block
-10. critical functions get encrypted with a second layer (separate key, counter=1) on top of the first
-11. appends .prot blob as a new PT_LOAD segment (PF_R|PF_X, align 0x1000) — rewrites phdrs, shdrs and shstrtab
-12. patches .init_array:
+5. encrypts strings in .rodata-like sections (SHT_PROGBITS, alloc, not exec, not writable, not .prot_data) — length 4 to 512 bytes, separate xor key per string via xxhash32
+6. patches call sites: every bl/blx is rewritten to jump into the stub in .prot
+7. finalizes integrity hashes
+8. encrypts exec sections with chacha20, skip ranges are skipped. each region gets own nonce, derived from region VA through a chacha20 block
+9. critical functions get encrypted with a second layer (separate key, counter=1) on top of the first
+10. appends .prot blob as a new PT_LOAD segment (PF_R|PF_X, align 0x1000) — rewrites phdrs, shdrs and shstrtab
+11. patches .init_array:
     - arm64 PIE: rewrites .rela.dyn relocations covering .init_array — changes type to R_AARCH64_RELATIVE, reorders addends so _prot_init lands in slot 0
     - arm32 PIE: same thing with R_ARM_RELATIVE
     - non-PIE fallback: writes raw VA into first empty slot
-13. wipes _prot_init, _prot_begin, _prot_init_end from .symtab (zeroes name and st_name). deliberately doesn't touch .dynsym — renaming there without rebuilding .hash chains breaks dlsym
-14. optionally renames sections (XorShift64, 64-char names), then masks own sections: .prot_text → .text.0, .prot_data → .rodata0, .prot → .note0
-15. optionally obfuscates symbol names in .symtab/.dynsym, rebuilds .hash table, zeroes DT_SONAME and DT_GNU_HASH
+12. wipes _prot_init, _prot_begin, _prot_init_end from .symtab (zeroes name and st_name). deliberately doesn't touch .dynsym — renaming there without rebuilding .hash chains breaks dlsym
+13. optionally renames sections (XorShift64, 64-char names), then masks own sections: .prot_text → .text.0, .prot_data → .rodata0, .prot → .note0
 
 ### the decryptor (prot_init.c)
 
@@ -208,11 +206,9 @@ protector.exe [-v] [-c config.ini] input.so output.so
 
 ```ini
 rename_sections  = true
-rename_symbols   = true
 encrypt_text     = true
 skip_init_array  = true
 obfuscate_magic  = true
-graph_breaker    = false
 name_seed        = 0x06AC82E3148BF15B
 
 [critical]
@@ -233,9 +229,7 @@ name_seed        = 0x06AC82E3148BF15B
 | `encrypt_text` | encrypts .text and all exec sections (except .plt) with chacha20 |
 | `skip_init_array` | doesn't rename .init_array/.fini_array/.dynamic/.got |
 | `rename_sections` | randomizes section names (64-char names, XorShift64) |
-| `rename_symbols` | obfuscates non-exported symbols, rebuilds .hash |
 | `obfuscate_magic` | xors PROT_MAGIC with 0xC01EBA42 |
-| `graph_breaker` | fake prologues and junk after branches — **disabled, crashes** |
 | `name_seed` | seed for name generator |
 | `[critical]` | va, optional size, name — second chacha20 layer (crit key, counter=1) |
 | `[skip]` | va, optional size, name — don't encrypt (decryptor functions) |
@@ -310,8 +304,6 @@ shares are stored in .prot_data and don't fall under encryption. need to change 
 - **memory dump** — once _prot_init has run, decrypted code is visible in process memory. protects against static analysis of the .so file, not against a targeted runtime dump
 - **extractNativeLibs=false** — supported. dl_iterate_phdr uses p_filesz (not p_memsz), which works correctly for APK-embedded libraries
 - **arm64 page layout** — if _prot_init VA = 0x1000 (same page as .text), dreg() remaps the page it's running on itself and everything falls apart. check that output shows `_prot_init VA` >= 0x2000, and that -O0 -fno-builtin flags are actually applied to prot_init.c
-- **graph_breaker** — disabled. current implementation clobbers real instructions (fake prologues after first ret, junk after B in thumb), which breaks reachable code. will be rewritten to only insert into inter-function padding
-- **arm64 pattern** — PROT_INIT_PATTERN_ARM64 not implemented (TODO in code). skip VA must be resolved from symtab or _prot_init_end marker. arm32 pattern exists but isn't used on arm64 branch
 
 ---
 
@@ -331,9 +323,7 @@ aarch-packer/
 │   │                         crit layer, XorShift64 name generator
 │   ├── integrity.h         — xxhash32 implementation, table magic values
 │   ├── string_enc.h        — .rodata string scanner, xor encryption, blob builder
-│   ├── graph_breaker.h     — fake prologue and junk insertion (disabled)
 │   ├── sec_renamer.h       — section name randomization (XorShift64, rewrites .shstrtab)
-│   ├── sym_obfuscator.h    — symbol obfuscation, .hash rebuild, DT_SONAME wipe
 │   └── config.h            — config.ini parser, CriticalFunc/SkipFunc/whitelist structs
 ├── runtime/
 │   ├── prot_init.c         — runtime decryptor (_prot_init, do_decrypt, dreg, dstr,
