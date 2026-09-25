@@ -33,4 +33,4 @@ static const uint32_t INTEGRITY_MAGIC = 0x9740B255;
 
 struct IntegrityRecord { uint32_t magic, n_hashes; };
 
-static const uint32_t CRIT_MAGIC = 0x54495243;"
+static const uint32_t CRIT_MAGIC = 0x54495243;
